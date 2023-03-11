@@ -8,13 +8,13 @@ timeout_half_sec = 0.5
 timeout_two_sec = 2
 timeout_three_sec = 3
 TCP_SYN_FLAG = 'S'
+TCP_RST_FLAG = 'R'
 
 stop_flag = 0
 
 target = input("Please add target: ")
 target = "192.168.50.134"
-# registered_Ports = range(1,1023)
-registered_Ports = range(1, 100)
+registered_Ports = range(1,1023)
 open_ports = []
 
 
@@ -32,7 +32,7 @@ def scan_port(dst_port):
     elif syn_pkt.haslayer(TCP):
         var = syn_pkt[TCP].flags & 0x10 == 0x10
 
-    pkt = IP(dst=target) / TCP(sport=source_port, dport=dst_port, flags=TCP_SYN_FLAG)
+    pkt = IP(dst=target) / TCP(sport=source_port, dport=dst_port, flags=TCP_RST_FLAG)
     sr(pkt, timeout=timeout_half_sec)
 
     return True
