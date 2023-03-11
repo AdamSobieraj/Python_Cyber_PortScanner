@@ -31,7 +31,7 @@ def scan_port(dst_port):
     elif syn_pkt.haslayer(TCP):
         var = syn_pkt[TCP].flags & 0x12 == 0x12
         pkt = IP(dst=target)/TCP(sport=source_port,dport=dst_port,flags=TCP_RST_FLAG)
-        sr(pkt, timeout=timeout_half_sec)
+        sr(pkt, timeout=timeout_two_sec)
         return var
 
 
