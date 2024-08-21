@@ -12,3 +12,5 @@ def brut_force(input_file, username, connect_ssh, stop_flag):
             t.start()
             time.sleep(1)
 
+if __name__ == "__main__":
+    brut_force()
